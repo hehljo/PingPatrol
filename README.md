@@ -54,7 +54,7 @@ PingPatrol is a simple web-based network monitoring tool written in Python using
 Start the application with:
 
 ```sh
-python pingpatrolv4.py
+python pingpatrol.py
 ```
 
 The web interface will be available at [http://localhost:5050](http://localhost:5050).
