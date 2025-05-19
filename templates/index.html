@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="{{ language }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PingPatrol</title>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono&family=Jersey+10&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            color-scheme: dark;
+        }
+
+        body {
+            background-color: #0f1f0f;
+            color: #d0ffd0;
+            font-family: 'Space Mono', monospace;
+            display: flex;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        body[data-font="jersey"] {
+            font-family: 'Jersey 10', cursive;
+        }
+
+        body[data-size="small"] {
+            font-size: 0.8rem;
+        }
+
+        body[data-size="medium"] {
+            font-size: 1rem;
+        }
+
+        body[data-size="large"] {
+            font-size: 1.2rem;
+        }
+
+        .container {
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #9fff9f;
+        }
+
+        label {
+            display: block;
+            margin-top: 1rem;
+            font-weight: 600;
+        }
+
+        input[type="number"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 0.5rem;
+            background: #1a3d1a;
+            border: none;
+            color: #d0ffd0;
+            border-radius: 6px;
+            font-family: inherit;
+            box-sizing: border-box; /* Diese Zeile hinzufügen */
+        }
+        button {
+            margin-top: 1rem;
+            padding: 0.7rem;
+            background: #2e6e2e;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
+            width: 100%;
+        }
+
+        button:hover {
+            background: #3a8c3a;
+        }
+
+        .status {
+            margin-top: 1rem;
+            font-size: 1rem;
+            text-align: center;
+            color: #c0ffc0;
+        }
+
+        .log-box {
+            margin-top: 1rem;
+            background-color: #162f16;
+            padding: 1rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        .tabs {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .tab-button {
+            background: none;
+            border: 2px solid #3a8c3a;
+            color: #9fff9f;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border-radius: 6px;
+        }
+
+        .tab-button.active {
+            background: #3a8c3a;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body data-font="space" data-size="medium">
+<div class="container">
+    <h1>PingPatrol</h1>
+
+    <div class="tabs">
+        <button class="tab-button active" data-tab="dashboard">{{ texts.dashboard }}</button>
+        <button class="tab-button" data-tab="settings">{{ texts.settings }}</button>
+    </div>
+
+    <!-- Dashboard Tab -->
+    <div class="tab-content active" id="dashboard">
+        <div class="status">
+            {{ texts.status }}: <strong id="status-indicator">{{ texts.log_loading }}</strong>
+        </div>
+
+        <form method="post" action="/start">
+            <button>{{ texts.start }}</button>
+        </form>
+
+        <form method="post" action="/stop">
+            <button>{{ texts.stop }}</button>
+        </form>
+
+        <form method="post" action="/send-test">
+            <button>{{ texts.send_test }}</button>
+        </form>        
+
+        <div class="log-box" id="log-box">
+            {{ texts.log_loading }}
+        </div>
+    </div>
+
+    <!-- Settings Tab -->
+    <div class="tab-content" id="settings">
+        <form method="post" action="/update">
+            <label for="interval">{{ texts.interval }}</label>
+            <input type="number" name="interval" id="interval" value="{{ interval }}" required>
+
+            <label for="devices">{{ texts.devices }}</label>
+            <textarea name="devices" id="devices" rows="6" required>{{ devices }}</textarea>
+
+            <label for="font">{{ texts.font }}</label>
+            <select id="font">
+                <option value="space">{{ texts.space }}</option>
+                <option value="jersey">{{ texts.jersey }}</option>
+            </select>
+
+            <label for="fontsize">{{ texts.fontsize }}</label>
+            <select id="fontsize">
+                <option value="small">{{ texts.small }}</option>
+                <option value="medium" selected>{{ texts.medium }}</option>
+                <option value="large">{{ texts.large }}</option>
+            </select>
+
+            <label for="language">{{ texts.language }}</label>
+            <select id="language" name="language">
+                <option value="de" {% if language == "de" %}selected{% endif %}>{{ texts.german }}</option>
+                <option value="en" {% if language == "en" %}selected{% endif %}>{{ texts.english }}</option>
+            </select>
+
+            <button type="submit">{{ texts.save }}</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    const TEXT_ACTIVE = "{{ texts.active }}";
+    const TEXT_INACTIVE = "{{ texts.inactive }}";
+
+    function fetchLog() {
+        fetch("/debug-log")
+            .then(res => res.json())
+            .then(data => {
+                const box = document.getElementById("log-box");
+                box.textContent = data.lines.join("\n");
+            });
+    }
+
+    function updateStatus() {
+        fetch("/status")
+            .then(res => res.json())
+            .then(data => {
+                const indicator = document.getElementById("status-indicator");
+                if (data.running) {
+                    indicator.textContent = TEXT_ACTIVE;
+                    indicator.style.color = "#90ee90";
+                } else {
+                    indicator.textContent = TEXT_INACTIVE;
+                    indicator.style.color = "#ffaaaa";
+                }
+            });
+    }
+
+    setInterval(() => {
+        fetchLog();
+        updateStatus();
+    }, 3000);
+
+    fetchLog();
+    updateStatus();
+
+    // Tab Navigation
+    document.querySelectorAll(".tab-button").forEach(btn => {
+        btn.addEventListener("click", () => {
+            document.querySelectorAll(".tab-button").forEach(b => b.classList.remove("active"));
+            document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+
+            btn.classList.add("active");
+            document.getElementById(btn.dataset.tab).classList.add("active");
+        });
+    });
+
+    // Font switcher
+    document.getElementById("font").addEventListener("change", e => {
+        document.body.setAttribute("data-font", e.target.value);
+    });
+
+    document.getElementById("fontsize").addEventListener("change", e => {
+        document.body.setAttribute("data-size", e.target.value);
+    });
+
+    // Sprache kann hier dynamisch umgeschaltet werden, wenn gewünscht
+    document.getElementById("language").addEventListener("change", e => {
+        // Optional: Seite neu laden, um Sprache zu übernehmen
+        // e.target.form.submit();
+    });
+
+    // Start/Stop per AJAX senden, damit kein Reload erfolgt
+    document.querySelectorAll('form[action="/start"], form[action="/stop"]').forEach(form => {
+        form.addEventListener("submit", function(e) {
+            e.preventDefault();
+            fetch(form.action, { method: "POST" })
+                .then(() => updateStatus());
+        });
+    });
+</script>
+</body>
+</html>
