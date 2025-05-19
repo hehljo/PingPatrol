@@ -7,7 +7,7 @@ import csv
 import smtplib
 from email.mime.text import MIMEText
 from ping3 import ping
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, jsonify
 from dotenv import load_dotenv
 
 translations = {
@@ -21,7 +21,7 @@ translations = {
         "start": "Start",
         "stop": "Stop",
         "log_loading": "Lade Logs...",
-        "interval": "Ping-Intervall (Minuten):",
+        "interval": "Ping-Intervall (Sekunden):",
         "devices": "Geräte (IP,Hostname):",
         "font": "Schriftart:",
         "fontsize": "Schriftgröße:",
@@ -45,7 +45,7 @@ translations = {
         "start": "Start",
         "stop": "Stop",
         "log_loading": "Loading logs...",
-        "interval": "Ping interval (minutes):",
+        "interval": "Ping interval (seconds):",
         "devices": "Devices (IP,Hostname):",
         "font": "Font:",
         "fontsize": "Font size:",
@@ -92,8 +92,8 @@ def load_config():
         with open(CONFIG_FILE) as f:
             return json.load(f)
     except FileNotFoundError:
-        # Standardwert: Deutsch
-        return {"interval_minutes": 10, "language": "de"}
+        # Standardwert: Deutsch, Intervall in Sekunden
+        return {"interval_seconds": 10, "language": "de"}
 
 def save_config(config):
     with open(CONFIG_FILE, "w") as f:
@@ -110,6 +110,9 @@ def send_email(subject, body):
             smtp.send_message(msg)
     except Exception as e:
         logging.error(f"Email error: {e}")
+
+is_running = False
+ping_thread = None
 
 def ping_loop():
     global is_running, device_status
@@ -139,17 +142,16 @@ def ping_loop():
         if unreachable:
             send_email("PingPatrol: Geräte nicht erreichbar", "\n".join(unreachable))
 
-        sleep_total = config.get("interval_minutes", 10) * 60
+        sleep_total = config.get("interval_seconds", 10)
         for _ in range(sleep_total):
             if not is_running:
                 break
             time.sleep(1)
 
-
 @app.route("/", methods=["GET"])
 def index():
     config = load_config()
-    interval = config.get("interval_minutes", 10)
+    interval = config.get("interval_seconds", 10)
     language = config.get("language", "de")
     devices = load_devices()
     devices_text = "\n".join([",".join(row) for row in devices])
@@ -169,7 +171,7 @@ def update():
         devices_text = request.form.get("devices", "")
         language = request.form.get("language", "de")
         lines = [line for line in devices_text.strip().split("\n") if "," in line]
-        save_config({"interval_minutes": interval, "language": language})
+        save_config({"interval_seconds": interval, "language": language})
         save_devices("\n".join(lines))
     except Exception as e:
         logging.error(f"Update Error: {e}")
@@ -179,17 +181,12 @@ def update():
 def send_test():
     config = load_config()
     devices = load_devices()
-    interval = config.get("interval_minutes", 10)
-    body_lines = [f"Aktuelles Ping-Intervall: {interval} Minuten", "", "Geräteliste:"]
+    interval = config.get("interval_seconds", 10)
+    body_lines = [f"Aktuelles Ping-Intervall: {interval} Sekunden", "", "Geräteliste:"]
     for ip, name in devices:
         body_lines.append(f"{name} ({ip})")
     send_email("PingPatrol Test", "\n".join(body_lines))
     return redirect(url_for("index"))
-
-from flask import jsonify
-
-is_running = False
-ping_thread = None
 
 @app.route("/start", methods=["POST"])
 def start():
@@ -214,7 +211,6 @@ def debug_log():
 @app.route("/status", methods=["GET"])
 def status():
     return jsonify(running=is_running)
-
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5050, debug=True)
