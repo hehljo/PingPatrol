@@ -2,6 +2,8 @@
     <img src="https://github.com/user-attachments/assets/5cfc4d1d-a04b-43a4-84be-c98f3bbfd84d" alt="LogoPingPatrol" width="45%"/>
 </div>
 
+<a href="https://buymeacoffee.com/pommesbude" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
+
 # PingPatrol
 
 PingPatrol is a simple web-based network monitoring tool written in Python using Flask. It regularly pings a list of devices and can send email notifications if any device becomes unreachable. The web interface allows you to configure devices, set the ping interval, change the language, and adjust the appearance.
