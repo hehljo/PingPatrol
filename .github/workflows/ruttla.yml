@@ -1,0 +1,17 @@
+# Ruttla-Gate — die Logik liegt zentral in hehljo/Ruttla (.github/workflows/ruttla-gate.yml).
+name: ruttla
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  ruttla:
+    permissions:
+      contents: read
+      security-events: write
+    uses: hehljo/Ruttla/.github/workflows/ruttla-gate.yml@main
